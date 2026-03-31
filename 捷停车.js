@@ -16,7 +16,7 @@ hostname = %APPEND% sytgate.jslife.com.cn
 */
 
 // ---------------------- 一般不动变量区域 ----------------------
-const $ = new Env('捷停车 · 签到小报告');
+const $ = new Env('捷停车 · 签到小报告 🛵');
 const origin = 'https://sytgate.jslife.com.cn';
 const jtc_userId_key = 'jtc_userId';
 const Notify = 1;  // 0 为关闭通知, 1 为打开通知, 默认为 1
