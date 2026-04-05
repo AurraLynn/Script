@@ -31,39 +31,44 @@ hostname = wmapp-api.waimaimingtang.com
 */
 const $ = new Env("歪卖 · Status Log");
 
-// ====== 拦截并魔改通知排版 (Surge/QX 专属阴阳怪气 极简版) ======
+// ====== 拦截并魔改通知排版 (Surge/QX 极简毒舌版) ======
 const originalMsg = $.msg;
 $.msg = function (title, subTitle, body, options) {
     let content = (subTitle ? subTitle + "\n" : "") + (body || "");
-
+    
     if (content) {
         // --- 提取核心数据 ---
-        let userMatch = content.match(/用户.*?[:：]\s*([^\s]+)/) || content.match(/账号.*?\[(.*?)\]/) || ["", "神秘非酋"];
+        let userMatch = content.match(/用户.*?[:：]\s*([^\s]+)/) || content.match(/账号.*?\[(.*?)\]/) || ["", "未知"];
         let user = userMatch[1];
-
+        
         let addMatch = content.match(/(?:获得|增加|红包).*?(\d+[\.\d]*)/) || content.match(/\+(\d+[\.\d]*)/);
         let addVal = addMatch ? addMatch[1] : "0";
-
-        let totalMatch = content.match(/(?:余额|饭票|总计).*?(\d+[\.\d]*)/) || ["", "未知"];
+        
+        let totalMatch = content.match(/(?:余额|饭票|总计).*?(\d+[\.\d]*)/) || ["", "未知"]; 
         let totalVal = totalMatch[1];
 
-        // --- 判断成败 ---
-        let isSuccess = Number(addVal) > 0 || content.includes("成功");
+        // --- 账号状态与成败判定 ---
+        let isSuccess = Number(addVal) > 0;
+        let isCookieInvalid = content.includes("失效") || content.includes("重新登录") || content.includes("未登录") || content.includes("过期");
 
-        // --- 重新分配通知层级（关键！） ---
+        // --- 极简排版 ---
+        
+        // 1. 标题：干脆利落，只报状态
+        let newTitle = isCookieInvalid ? "歪卖签到 [账号失效]" 
+                     : isSuccess ? "歪卖签到 [成功]" 
+                     : "歪卖签到 [失败]";
+        
+        // 2. 副标题：只留核心数据，锁屏一眼看完
+        let newSubTitle = isCookieInvalid ? `用户: ${user} | 状态: 需重新登录`
+                        : `用户: ${user} | 收益: +${addVal}`;
 
-        // 1. 标题 (Title)：最醒目，直接显示成败
-        let newTitle = isSuccess ? "歪卖签到：成功 🤡" : "歪卖签到：翻车 💀";
+        // 3. 正文：一句话吐槽 + 余额
+        let roast = isCookieInvalid ? "别跑了，号早凉了。"
+                  : isSuccess ? "又成功白嫖一次，老板含泪血亏。"
+                  : "折腾半天颗粒无收，打白工了。";
 
-        // 2. 副标题 (SubTitle)：未展开时可见，放核心收益
-        let newSubTitle = isSuccess ? `👤 ${user} ｜ 💰 +${addVal} 饭票` : `👤 ${user} ｜ 💨 颗粒无收`;
+        let newBody = `总余额: ${totalVal}\n\n${roast}`;
 
-        // 3. 正文 (Body)：展开后才可见，放总资产和吐槽
-        let newBody = isSuccess
-            ? `当前总计：${totalVal} 饭票\n主打一个你很努力，但也仅此而已 🤦🏻‍♀️`
-            : `当前总计：${totalVal} 饭票\n天天想薅羊毛？今天风挺大，西北风管够 🤡`;
-
-        // 传参时把 title, subTitle, body 分别对应填入
         return originalMsg.call(this, newTitle, newSubTitle, newBody, options);
     }
     return originalMsg.call(this, title, subTitle, body, options);
