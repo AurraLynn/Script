@@ -31,45 +31,47 @@ hostname = wmapp-api.waimaimingtang.com
 */
 const $ = new Env("歪卖 · Status Log");
 
-// ====== 拦截并魔改通知排版 (Surge/QX 极简毒舌版) ======
+// ====== 拦截并魔改通知排版 (Surge 专属阴阳怪气版) ======
 const originalMsg = $.msg;
 $.msg = function (title, subTitle, body, options) {
     let content = (subTitle ? subTitle + "\n" : "") + (body || "");
-    
+
     if (content) {
-        // --- 提取核心数据 ---
-        let userMatch = content.match(/用户.*?[:：]\s*([^\s]+)/) || content.match(/账号.*?\[(.*?)\]/) || ["", "未知"];
+        // --- 粗暴抓取原生日志里的数据 ---
+        let userMatch = content.match(/用户.*?[:：]\s*([^\s]+)/) || content.match(/账号.*?\[(.*?)\]/) || ["", "Lyn"];
         let user = userMatch[1];
-        
+
+        // 【修改点1】去掉了强行兜底的 "8"，如果没有匹配到增加数值，就老老实实赋值为 "0"
         let addMatch = content.match(/(?:获得|增加|红包).*?(\d+[\.\d]*)/) || content.match(/\+(\d+[\.\d]*)/);
         let addVal = addMatch ? addMatch[1] : "0";
-        
-        let totalMatch = content.match(/(?:余额|饭票|总计).*?(\d+[\.\d]*)/) || ["", "未知"]; 
+
+        let totalMatch = content.match(/(?:余额|饭票|总计).*?(\d+[\.\d]*)/) || ["", "未知"];
         let totalVal = totalMatch[1];
 
-        // --- 账号状态与成败判定 ---
+        // --- 判断成败 ---
+        // 【修改点2】彻底抛弃包含“失败/异常”的文字判断，只认数字，饭票 > 0 才算成功
         let isSuccess = Number(addVal) > 0;
-        let isCookieInvalid = content.includes("失效") || content.includes("重新登录") || content.includes("未登录") || content.includes("过期");
-
-        // --- 极简排版 ---
         
-        // 1. 标题：干脆利落，只报状态
-        let newTitle = isCookieInvalid ? "歪卖签到 [账号失效]" 
-                     : isSuccess ? "歪卖签到 [成功]" 
-                     : "歪卖签到 [失败]";
-        
-        // 2. 副标题：只留核心数据，锁屏一眼看完
-        let newSubTitle = isCookieInvalid ? `用户: ${user} | 状态: 需重新登录`
-                        : `用户: ${user} | 收益: +${addVal}`;
+        let succCount = isSuccess ? 1 : 0;
+        let failCount = isSuccess ? 0 : 1;
+        let statusNote = isSuccess ? "（今天居然没翻车）" : "（非酋本酋就是你了）";
 
-        // 3. 正文：一句话吐槽 + 余额
-        let roast = isCookieInvalid ? "别跑了，号早凉了。"
-                  : isSuccess ? "又成功白嫖一次，老板含泪血亏。"
-                  : "折腾半天颗粒无收，打白工了。";
+        // --- 阴阳怪气文案库 ---
+        let conclusion = isSuccess ? "忙活一圈，赚了个心理安慰 🤦🏻‍♀️" : "一顿操作猛如虎，一看收益是零点五 🤡";
+        let roast = isSuccess
+            ? `你在这认真打卡，系统在那随手 +${addVal}\n主打一个你很努力，但也仅此而已`
+            : `天天想着薅羊毛，这下被反薅了吧？\n老板法拉利又多了一个轮胎，而你还在喝西北风！`;
 
-        let newBody = `总余额: ${totalVal}\n\n${roast}`;
+        // --- 组装绝美排版 ---
+        let newBody = `账号：1 个\n` +
+                      `成功：${succCount} ｜ 失败：${failCount}${statusNote}\n\n` +
+                      `用户：${user}\n` +
+                      `饭票：${totalVal}（本次+${addVal}）\n\n` +
+                      `收益结论：\n${conclusion}\n\n` +
+                      `吐槽：\n${roast}`;
 
-        return originalMsg.call(this, newTitle, newSubTitle, newBody, options);
+        // Surge里，把自定义的标题传给title，清空subTitle让排版全在正文显示
+        return originalMsg.call(this, "歪卖 · Status Log", "", newBody, options);
     }
     return originalMsg.call(this, title, subTitle, body, options);
 };
