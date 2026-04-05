@@ -31,7 +31,7 @@ hostname = wmapp-api.waimaimingtang.com
 */
 const $ = new Env("歪卖 · Status Log");
 
-// ====== 拦截并魔改通知排版 (Surge 专属阴阳怪气版) ======
+// ====== 拦截并魔改通知排版 (Surge 专属阴阳怪气 定制版) ======
 const originalMsg = $.msg;
 $.msg = function (title, subTitle, body, options) {
     let content = (subTitle ? subTitle + "\n" : "") + (body || "");
@@ -41,19 +41,27 @@ $.msg = function (title, subTitle, body, options) {
         let userMatch = content.match(/用户.*?[:：]\s*([^\s]+)/) || content.match(/账号.*?\[(.*?)\]/) || ["", "Lyn"];
         let user = userMatch[1];
 
-        // 【修改点1】去掉了强行兜底的 "8"，如果没有匹配到增加数值，就老老实实赋值为 "0"
+        // 提取获得的饭票
         let addMatch = content.match(/(?:获得|增加|红包).*?(\d+[\.\d]*)/) || content.match(/\+(\d+[\.\d]*)/);
         let addVal = addMatch ? addMatch[1] : "0";
 
+        // 提取总饭票
         let totalMatch = content.match(/(?:余额|饭票|总计).*?(\d+[\.\d]*)/) || ["", "未知"];
         let totalVal = totalMatch[1];
 
-        // --- 判断成败 ---
-        // 【修改点2】彻底抛弃包含“失败/异常”的文字判断，只认数字，饭票 > 0 才算成功
+        // --- 判断成败（只认实打实的饭票） ---
         let isSuccess = Number(addVal) > 0;
         
-        let succCount = isSuccess ? 1 : 0;
-        let failCount = isSuccess ? 0 : 1;
+        // --- 动态状态与原因提取 ---
+        let succIcon = isSuccess ? "👌🏼" : "  ";
+        let failIcon = isSuccess ? "  " : "🙀";
+        
+        // 自动提取失败原因：找带有失败/异常/上限/过期等字眼的那一行
+        let reasonMatch = content.match(/[^\n]*(?:失败|异常|上限|未登录|过期)[^\n]*/);
+        // 如果提取到了就截取前15个字避免太长破坏排版，没提取到就写"疑似黑号/白给"
+        let reasonText = reasonMatch ? reasonMatch[0].trim().substring(0, 15) : "疑似黑号/白给"; 
+        
+        let failReason = isSuccess ? "" : `（${reasonText}）`;
         let statusNote = isSuccess ? "（今天居然没翻车）" : "（非酋本酋就是你了）";
 
         // --- 阴阳怪气文案库 ---
@@ -63,9 +71,8 @@ $.msg = function (title, subTitle, body, options) {
             : `天天想着薅羊毛，这下被反薅了吧？\n老板法拉利又多了一个轮胎，而你还在喝西北风！`;
 
         // --- 组装绝美排版 ---
-        let newBody = `账号：1 个\n` +
-                      `成功：${succCount} ｜ 失败：${failCount}${statusNote}\n\n` +
-                      `用户：${user}\n` +
+        let newBody = `用户：${user}\n` +
+                      `成功：（${succIcon}）  失败：（${failIcon}）${failReason}${statusNote}\n\n` +
                       `饭票：${totalVal}（本次+${addVal}）\n\n` +
                       `收益结论：\n${conclusion}\n\n` +
                       `吐槽：\n${roast}`;
