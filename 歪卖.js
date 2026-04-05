@@ -31,44 +31,40 @@ hostname = wmapp-api.waimaimingtang.com
 */
 const $ = new Env("歪卖 · Status Log");
 
-// ====== 拦截并魔改通知排版 (Surge 专属阴阳怪气版) ======
+// ====== 拦截并魔改通知排版 (Surge/QX 专属阴阳怪气 极简版) ======
 const originalMsg = $.msg;
 $.msg = function (title, subTitle, body, options) {
     let content = (subTitle ? subTitle + "\n" : "") + (body || "");
-    
+
     if (content) {
-        // --- 粗暴抓取原生日志里的数据（提取不到就用默认值） ---
-        let userMatch = content.match(/用户.*?[:：]\s*([^\s]+)/) || content.match(/账号.*?\[(.*?)\]/) || ["", "Lyn"];
+        // --- 提取核心数据 ---
+        let userMatch = content.match(/用户.*?[:：]\s*([^\s]+)/) || content.match(/账号.*?\[(.*?)\]/) || ["", "神秘非酋"];
         let user = userMatch[1];
-        
-        let addMatch = content.match(/(?:获得|增加|红包).*?(\d+[\.\d]*)/) || content.match(/\+(\d+[\.\d]*)/) || ["", "8"];
-        let addVal = addMatch[1];
-        
-        let totalMatch = content.match(/(?:余额|饭票|总计).*?(\d+[\.\d]*)/) || ["", "3574"];
+
+        let addMatch = content.match(/(?:获得|增加|红包).*?(\d+[\.\d]*)/) || content.match(/\+(\d+[\.\d]*)/);
+        let addVal = addMatch ? addMatch[1] : "0";
+
+        let totalMatch = content.match(/(?:余额|饭票|总计).*?(\d+[\.\d]*)/) || ["", "未知"];
         let totalVal = totalMatch[1];
 
         // --- 判断成败 ---
-        let isSuccess = !content.includes("失败") && !content.includes("异常") && !content.includes("上限") && !content.includes("error");
-        let succCount = isSuccess ? 1 : 0;
-        let failCount = isSuccess ? 0 : 1;
-        let statusNote = isSuccess ? "（今天居然没翻车）" : "（非酋本酋就是你了）";
+        let isSuccess = Number(addVal) > 0 || content.includes("成功");
 
-        // --- 阴阳怪气文案库 ---
-        let conclusion = isSuccess ? "忙活一圈，赚了个心理安慰 🤦🏻‍♀️" : "一顿操作猛如虎，一看收益是零点五 🤡";
-        let roast = isSuccess 
-            ? `你在这认真打卡，系统在那随手 +${addVal}\n主打一个你很努力，但也仅此而已`
-            : `天天想着薅羊毛，这下被反薅了吧？\n老板法拉利又多了一个轮胎，而你还在喝西北风！`;
+        // --- 重新分配通知层级（关键！） ---
 
-        // --- 组装绝美排版 ---
-        let newBody = `账号：1 个\n` +
-                      `成功：${succCount} ｜ 失败：${failCount}${statusNote}\n\n` +
-                      `用户：${user}\n` +
-                      `饭票：${totalVal}（本次+${addVal}）\n\n` +
-                      `收益结论：\n${conclusion}\n\n` +
-                      `吐槽：\n${roast}`; 
+        // 1. 标题 (Title)：最醒目，直接显示成败
+        let newTitle = isSuccess ? "歪卖签到：成功 🤡" : "歪卖签到：翻车 💀";
 
-        // Surge里，把自定义的标题传给title，清空subTitle让排版全在正文显示
-        return originalMsg.call(this, "歪卖 · Status Log", "", newBody, options);
+        // 2. 副标题 (SubTitle)：未展开时可见，放核心收益
+        let newSubTitle = isSuccess ? `👤 ${user} ｜ 💰 +${addVal} 饭票` : `👤 ${user} ｜ 💨 颗粒无收`;
+
+        // 3. 正文 (Body)：展开后才可见，放总资产和吐槽
+        let newBody = isSuccess
+            ? `当前总计：${totalVal} 饭票\n主打一个你很努力，但也仅此而已 🤦🏻‍♀️`
+            : `当前总计：${totalVal} 饭票\n天天想薅羊毛？今天风挺大，西北风管够 🤡`;
+
+        // 传参时把 title, subTitle, body 分别对应填入
+        return originalMsg.call(this, newTitle, newSubTitle, newBody, options);
     }
     return originalMsg.call(this, title, subTitle, body, options);
 };
