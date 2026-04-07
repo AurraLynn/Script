@@ -31,7 +31,7 @@ hostname = wmapp-api.waimaimingtang.com
 */
 const $ = new Env("歪卖 · Status Log");
 
-// ====== 拦截并魔改通知排版 (Surge 专属阴阳怪气 定制版) ======
+// ====== 拦截并魔改通知排版 (Surge 专属阴阳怪气 极简去图标版) ======
 const originalMsg = $.msg;
 $.msg = function (title, subTitle, body, options) {
     let content = (subTitle ? subTitle + "\n" : "") + (body || "");
@@ -53,12 +53,10 @@ $.msg = function (title, subTitle, body, options) {
         let isSuccess = Number(addVal) > 0;
         
         // --- 动态状态与原因提取 ---
-        let succIcon = isSuccess ? "👌🏼" : "  ";
-        let failIcon = isSuccess ? "  " : "🙀";
+        let statusIcon = isSuccess ? "👌🏼" : "🙀";
         
         // 自动提取失败原因：找带有失败/异常/上限/过期等字眼的那一行
         let reasonMatch = content.match(/[^\n]*(?:失败|异常|上限|未登录|过期)[^\n]*/);
-        // 如果提取到了就截取前15个字避免太长破坏排版，没提取到就写"疑似黑号/白给"
         let reasonText = reasonMatch ? reasonMatch[0].trim().substring(0, 15) : "疑似黑号/白给"; 
         
         let failReason = isSuccess ? "" : `（${reasonText}）`;
@@ -67,15 +65,16 @@ $.msg = function (title, subTitle, body, options) {
         // --- 阴阳怪气文案库 ---
         let conclusion = isSuccess ? "忙活一圈，赚了个心理安慰 🤦🏻‍♀️" : "一顿操作猛如虎，一看收益是零点五 🤡";
         let roast = isSuccess
-            ? `你在这认真打卡，系统在那随手 +${addVal}\n主打一个你很努力，但也仅此而已`
+            ? `你在这认真打卡，系统在那随手 +${addVal}\n主打一个你很努力，但也仅此而已。`
             : `天天想着薅羊毛，这下被反薅了吧？\n老板法拉利又多了一个轮胎，而你还在喝西北风！`;
 
-        // --- 组装绝美排版 ---
+        // --- 组装绝美排版 (完全按照你的去图标清爽版定制) ---
         let newBody = `用户：${user}\n` +
-                      `成功：（${succIcon}）  失败：（${failIcon}）${failReason}${statusNote}\n\n` +
-                      `饭票：${totalVal}（本次+${addVal}）\n\n` +
-                      `收益结论：\n${conclusion}\n\n` +
-                      `吐槽：\n${roast}`;
+                      `状态：${statusIcon} ${statusNote}${failReason}\n` +
+                      `饭票：${totalVal}（本次 +${addVal}）\n` +
+                      `---------------------------\n` +
+                      `结论：\n${conclusion}\n\n` +
+                      `💬 吐槽：\n${roast}`;
 
         // Surge里，把自定义的标题传给title，清空subTitle让排版全在正文显示
         return originalMsg.call(this, "歪卖 · Status Log", "", newBody, options);
