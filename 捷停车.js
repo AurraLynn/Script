@@ -16,7 +16,7 @@ hostname = %APPEND% sytgate.jslife.com.cn
 */
 
 // ---------------------- 一般不动变量区域 ----------------------
-const $ = new Env('🚗 𝐉𝐏𝐚𝐫𝐤𝐢𝐧𝐠 · 赛博停车日记');
+const $ = new Env('捷停车 · 签到小报告 🛵');
 const origin = 'https://sytgate.jslife.com.cn';
 const jtc_userId_key = 'jtc_userId';
 const Notify = 1;  // 0 为关闭通知, 1 为打开通知, 默认为 1
@@ -76,7 +76,6 @@ async function main() {
     // 领取浏览奖励
     $.taskMap['T01'] && await receive("T01");
 
-    // 日志中保留明细，方便查错
     console.log($.result);
     await $.wait(1000 * 1);
 
@@ -105,32 +104,11 @@ async function main() {
         tease = "大佬受我一拜！这资产，怕不是把地下车库给承包了吧？";
     }
 
-    // 解析原本丑陋的 $.result，变成绝美的对齐格式
-    let taskLines = $.result.trim().split('\n').filter(Boolean);
-    let formattedTasks = taskLines.map(line => {
-        if (line.includes('[完成]')) {
-            let text = line.replace('[完成] ', '').replace(', ', '：');
-            return `✅ ${text}`; 
-        } else if (line.includes('[失败]')) {
-            let text = line.replace('[失败] ', '').replace(': ', '：');
-            // 自动判断是真失败，还是已经签到过了
-            if (text.includes('已') || text.includes('上限') || text.includes('频繁')) {
-                return `☑️ ${text}`; 
-            }
-            return `❌ ${text}`;
-        }
-        return line;
-    });
-    if (formattedTasks.length === 0) formattedTasks.push("❓ 未知：今天啥也没干");
-
-    // 极简排版 (恢复状态显示)
-    $.messages.push(`🥷🏻 账号：${hideSensitiveData($.mobile, 3, 4)}`);
-    $.messages.push(`💰 余额：${$.integralValue} 币 (折算 ¥${rmb})\n`);
-    
-    // 压入转换后漂亮的任务状态
-    formattedTasks.forEach(t => $.messages.push(t));
-    
-    $.messages.push(`\n💬 吐槽：${tease}`);
+    // 极简排版
+    $.messages.push(`账号: ${hideSensitiveData($.mobile, 3, 4)}`);
+    $.messages.push(`明细: ${$.result.replace(/\n$/, '').replace(/(.*)/g, "  - $1")}`);
+    $.messages.push(`余额: ${$.integralValue} 币 [≈ ${rmb} CNY]`);
+    $.messages.push(`吐槽: ${tease}`);
 
     await $.wait(1000 * 3);
   }
