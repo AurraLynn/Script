@@ -106,7 +106,7 @@ async function main() {
 
     // 极简排版
     $.messages.push(`账号: ${hideSensitiveData($.mobile, 3, 4)}`);
-    $.messages.push(`明细: ${$.result.replace(/\n$/, '').replace(/(.*)/g, "  - $1")}`);
+    $.messages.push(`明细: ${$.result.replace(/\n$/, '').replace(/(.*)/g, "$1")}`);
     $.messages.push(`余额: ${$.integralValue} 币 [≈ ${rmb} CNY]`);
     $.messages.push(`吐槽: ${tease}`);
 
